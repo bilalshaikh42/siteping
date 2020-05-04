@@ -28,12 +28,12 @@ import { SmsService } from './sms/sms.service';
 })
 export class AppModule {
   logger = new Logger(AppModule.name);
+  private last = 'Service Temporarily Unavailable - AAMC';
   constructor(
     schedulerService: SchedulerService,
     scraperService: ScraperService,
     private smsService: SmsService,
     private config: ConfigService,
-    private last = 'Service Temporarily Unavailable - AAMC',
   ) {
     const callback = () => {
       this.logger.log('Calling Scraper Service');
@@ -54,6 +54,6 @@ export class AppModule {
         }
       });
     };
-    schedulerService.addInterval('mcat', 300000, callback);
+    schedulerService.addInterval('mcat', 30000, callback);
   }
 }
