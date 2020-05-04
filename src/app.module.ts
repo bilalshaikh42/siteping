@@ -1,5 +1,5 @@
 import { Module, Logger } from '@nestjs/common';
-import { PingController } from './app.controller';
+
 import { ScheduleModule } from '@nestjs/schedule';
 
 import { SchedulerModule } from './scheduler/scheduler.module';
@@ -7,18 +7,33 @@ import { SchedulerService } from './scheduler/scheduler.service';
 
 import { ScraperService } from './scraper/scraper.service';
 import { ScraperModule } from './scraper/scraper.module';
-import { AxiosResponse } from 'axios';
-import { Observable } from 'rxjs';
-@Module({
-  controllers: [PingController],
 
-  imports: [ScheduleModule.forRoot(), SchedulerModule, ScraperModule],
+import { Observable } from 'rxjs';
+import { SmsModule } from './sms/sms.module';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { AdminModule } from './admin/admin.module';
+import { SmsService } from './sms/sms.service';
+
+@Module({
+  imports: [
+    ScheduleModule.forRoot(),
+    SchedulerModule,
+    ScraperModule,
+    SmsModule,
+    ConfigModule.forRoot({
+      envFilePath: ['config.env'],
+    }),
+    AdminModule,
+  ],
 })
 export class AppModule {
   logger = new Logger(AppModule.name);
   constructor(
     schedulerService: SchedulerService,
     scraperService: ScraperService,
+    private smsService: SmsService,
+    private config: ConfigService,
+    private last = 'Service Temporarily Unavailable - AAMC',
   ) {
     const callback = () => {
       this.logger.log('Calling Scraper Service');
@@ -27,9 +42,18 @@ export class AppModule {
       );
 
       html.subscribe((res: any) => {
-        this.logger.log(res);
+        if (res === this.last) {
+          this.logger.log('No Change!');
+        } else {
+          this.last = res;
+          this.logger.warn('Change Detected');
+          this.smsService.notify(
+            this.config.get('NOTIFICATION_NUMBER'),
+            'Change detected in page!',
+          );
+        }
       });
     };
-    schedulerService.addInterval('mcat', 10000, callback);
+    schedulerService.addInterval('mcat', 300000, callback);
   }
 }
