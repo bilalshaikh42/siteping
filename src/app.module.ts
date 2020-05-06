@@ -41,19 +41,24 @@ export class AppModule {
         'https://apps.aamc.org/mrs',
       );
 
-      html.subscribe((res: any) => {
-        if (res === this.last) {
-          this.logger.log('No Change!');
-        } else {
-          this.last = res;
-          this.logger.warn('Change Detected');
-          this.smsService.notify(
-            this.config.get('NOTIFICATION_NUMBER'),
-            'Change detected in page!',
-          );
-        }
-      });
+      html.subscribe(
+        (res: any) => {
+          if (res === this.last) {
+            this.logger.log('No Change!');
+          } else {
+            this.last = res;
+            this.logger.warn('Change Detected');
+            this.smsService.notify(
+              this.config.get('NOTIFICATION_NUMBER'),
+              'Change detected in page!',
+            );
+          }
+        },
+        (error: any) => {
+          this.logger.error(error);
+        },
+      );
     };
-    schedulerService.addInterval('mcat', 30000, callback);
+    schedulerService.addInterval('mcat', 3000, callback);
   }
 }
